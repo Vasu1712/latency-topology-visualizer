@@ -1,0 +1,51 @@
+{
+  "name": "latency-topology-visualizer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-radio-group": "^1.3.7",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-slider": "^1.3.5",
+    "@react-three/drei": "^10.5.1",
+    "@react-three/fiber": "^9.2.0",
+    "@types/three": "^0.178.1",
+    "axios": "^1.10.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "d3-dsv": "^3.0.1",
+    "framer-motion": "^12.23.6",
+    "index-array-by": "^1.4.2",
+    "liquid-glass-react": "^1.1.1",
+    "lucide-react": "^0.525.0",
+    "next": "15.4.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-globe.gl": "^2.34.0",
+    "recharts": "^3.1.0",
+    "swr": "^2.3.4",
+    "tailwind-merge": "^3.3.1",
+    "three": "^0.178.0",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@iconify-icon/react": "^3.0.0",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/d3-dsv": "^3.0.7",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5"
+  }
+}
