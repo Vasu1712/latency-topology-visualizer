@@ -45,6 +45,7 @@ const Earth: React.FC = () => {
 };
 
 const CameraController: React.FC<{ target: THREE.Vector3 | null }> = ({ target }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { camera, controls } = useThree() as { camera: THREE.PerspectiveCamera, controls: any };
     const { isStarted } = useStore();
     const [isAnimating, setIsAnimating] = useState(false);
