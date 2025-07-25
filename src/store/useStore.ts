@@ -8,12 +8,19 @@ interface VisibilityControls {
   showRegions: boolean;
 }
 
+interface HistoricalDataPoint {
+  timestamp: number;
+  latency: number;
+  exchangeId: string;
+  exchangeName: string;
+}
+
 interface FilterState {
   searchQuery: string;
   selectedClouds: string[];
   latencyRange: [number, number];
   timeRange: string;
-  selectedExchange: Exchange | null;
+  selectedExchanges: Exchange[];
 }
 
 interface AppStateWithFlow extends AppState {
@@ -23,6 +30,8 @@ interface AppStateWithFlow extends AppState {
   isDataLoading: boolean;
   visibility: VisibilityControls;
   filterState: FilterState;
+  historicalLatencyData: HistoricalDataPoint[];
+  isChartDataLoading: boolean;
 }
 
 interface StoreActions {
@@ -45,15 +54,27 @@ interface StoreActions {
   // Filter actions
   setSearchQuery: (query: string) => void;
   setSelectedClouds: (clouds: string[]) => void;
-  setLatencyRange: (maxLatency: number) => void;
+  setLatencyRange: (range: [number, number]) => void;
   setTimeRange: (range: string) => void;
-  setSelectedExchange: (exchange: Exchange | null) => void;
+  // Multi-exchange selection actions
+  setSelectedExchanges: (exchanges: Exchange[]) => void;
+  addSelectedExchange: (exchange: Exchange) => void;
+  removeSelectedExchange: (exchangeId: string) => void;
+  clearSelectedExchanges: () => void;
+  updateHistoricalData: (data: HistoricalDataPoint[]) => void;
+  setChartDataLoading: (loading: boolean) => void;
+  // Validation helpers
+  areChartParametersReady: () => boolean;
+  getChartParameters: () => {
+    exchanges: Exchange[];
+    cloudProviders: string[];
+    maxLatency: number;
+    timeRange: string;
+  } | null;
   // Computed getters
   getAverageLatency: () => number;
   getTotalConnections: () => number;
   getLatencyStats: () => { low: number; medium: number; high: number };
-  getFilteredExchanges: () => Exchange[];
-  getFilteredLatencyData: () => LatencyData[];
 }
 
 export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
@@ -62,6 +83,7 @@ export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
   cloudRegions: [],
   latencyData: [],
   historicalData: {},
+  historicalLatencyData: [],
   filters: {
     providers: Object.keys(CLOUD_PROVIDERS),
     exchanges: [],
@@ -74,6 +96,7 @@ export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
   hoveredCity: null,
   lastDataUpdate: null,
   isDataLoading: false,
+  isChartDataLoading: false,
   visibility: {
     showExchanges: true,
     showConnections: true,
@@ -83,11 +106,10 @@ export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
     searchQuery: '',
     selectedClouds: ['aws', 'gcp', 'azure'],
     latencyRange: [0, 500],
-    timeRange: '24hrs',
-    selectedExchange: null,
+    timeRange: '',
+    selectedExchanges: [],
   },
 
-  // Existing actions...
   updateLatencyData: (data) => set({ latencyData: data }),
   setFilters: (filters) =>
     set((state) => ({ filters: { ...state.filters, ...filters } })),
@@ -101,6 +123,7 @@ export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
   setHoveredCity: (city) => set({ hoveredCity: city }),
   setLastDataUpdate: (date) => set({ lastDataUpdate: date }),
   setDataLoading: (loading) => set({ isDataLoading: loading }),
+  setChartDataLoading: (loading) => set({ isChartDataLoading: loading }),
 
   // Visibility controls
   toggleExchanges: () =>
@@ -120,7 +143,7 @@ export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
       visibility: { ...state.visibility, ...visibility }
     })),
 
-  // Filter actions
+  // filter actions
   setSearchQuery: (query) =>
     set((state) => ({
       filterState: { ...state.filterState, searchQuery: query }
@@ -129,97 +152,103 @@ export const useStore = create<AppStateWithFlow & StoreActions>((set, get) => ({
     set((state) => ({
       filterState: { ...state.filterState, selectedClouds: clouds }
     })),
-  setLatencyRange: (maxLatency: number) =>
+  setLatencyRange: (range) =>
     set((state) => ({
-      filterState: { ...state.filterState, latencyRange: [0, maxLatency] } // Sets the range from 0 to the provided maxLatency
+      filterState: { ...state.filterState, latencyRange: range }
     })),
-  setTimeRange: (range) =>
+  setTimeRange: (range) => {
     set((state) => ({
       filterState: { ...state.filterState, timeRange: range }
-    })),
-  setSelectedExchange: (exchange) =>
-    set((state) => ({
-      filterState: { ...state.filterState, selectedExchange: exchange }
-    })),
+    }));
+    
+    // chart
+    const state = get();
+    if (range && state.areChartParametersReady()) {
+      // Clear existing data and start loading
+      set({ historicalLatencyData: [], isChartDataLoading: true });
+    }
+  },
 
-  // Computed getters
+  setSelectedExchanges: (exchanges) =>
+    set((state) => ({
+      filterState: { ...state.filterState, selectedExchanges: exchanges }
+    })),
+  addSelectedExchange: (exchange) =>
+    set((state) => {
+      const current = state.filterState.selectedExchanges;
+      if (current.length >= 2) {
+        return {
+          filterState: {
+            ...state.filterState,
+            selectedExchanges: [current[1], exchange]
+          }
+        };
+      }
+      if (!current.find(e => e.id === exchange.id)) {
+        return {
+          filterState: {
+            ...state.filterState,
+            selectedExchanges: [...current, exchange]
+          }
+        };
+      }
+      return state;
+    }),
+  removeSelectedExchange: (exchangeId) =>
+    set((state) => ({
+      filterState: {
+        ...state.filterState,
+        selectedExchanges: state.filterState.selectedExchanges.filter(e => e.id !== exchangeId)
+      }
+    })),
+  clearSelectedExchanges: () =>
+    set((state) => ({
+      filterState: { ...state.filterState, selectedExchanges: [] }
+    })),
+  updateHistoricalData: (data) => set({ 
+    historicalLatencyData: data, 
+    isChartDataLoading: false 
+  }),
+
+  areChartParametersReady: () => {
+    const state = get();
+    return (
+      state.filterState.selectedExchanges.length > 0 &&
+      state.filterState.selectedClouds.length > 0 &&
+      state.filterState.latencyRange[1] > 0 &&
+      state.filterState.timeRange.trim() !== ''
+    );
+  },
+
+  getChartParameters: () => {
+    const state = get();
+    if (!state.areChartParametersReady()) return null;
+    
+    return {
+      exchanges: state.filterState.selectedExchanges,
+      cloudProviders: state.filterState.selectedClouds,
+      maxLatency: state.filterState.latencyRange[1],
+      timeRange: state.filterState.timeRange,
+    };
+  },
+
   getAverageLatency: () => {
-    const latencyData = get().getFilteredLatencyData();
+    const latencyData = get().latencyData;
     if (latencyData.length === 0) return 0;
     const total = latencyData.reduce((sum, data) => sum + data.latency, 0);
     return Math.round(total / latencyData.length * 10) / 10;
   },
 
   getTotalConnections: () => {
-    return get().getFilteredLatencyData().length;
+    return get().latencyData.length;
   },
 
   getLatencyStats: () => {
-    const latencyData = get().getFilteredLatencyData();
+    const latencyData = get().latencyData;
     return {
       low: latencyData.filter(l => l.latency < 50).length,
       medium: latencyData.filter(l => l.latency >= 50 && l.latency <= 150).length,
       high: latencyData.filter(l => l.latency > 150).length,
     };
-  },
-
-  getFilteredExchanges: () => {
-    const { exchanges, filterState } = get();
-    let filtered = exchanges;
-
-    // Filter by cloud providers
-    if (filterState.selectedClouds.length > 0) {
-      filtered = filtered.filter(exchange =>
-        filterState.selectedClouds.includes(exchange.cloudProvider)
-      );
-    }
-
-    // Filter by search query
-    if (filterState.searchQuery.trim()) {
-      const query = filterState.searchQuery.toLowerCase();
-      filtered = filtered.filter(exchange =>
-        exchange.name.toLowerCase().includes(query) ||
-        exchange.region.toLowerCase().includes(query) ||
-        exchange.cloudProvider.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by selected exchange
-    if (filterState.selectedExchange) {
-      filtered = filtered.filter(exchange =>
-        exchange.id === filterState.selectedExchange?.id
-      );
-    }
-
-    return filtered;
-  },
-
-  getFilteredLatencyData: () => {
-    const { latencyData, filterState } = get();
-    let filtered = latencyData;
-
-    // Filter by latency range
-    filtered = filtered.filter(data =>
-      data.latency >= filterState.latencyRange[0] &&
-      data.latency <= filterState.latencyRange[1]
-    );
-
-    // Filter by time range (assuming timestamp is available)
-    const now = Date.now();
-    const timeRangeMs = {
-      '1hr': 3600000,
-      '6hrs': 21600000,
-      '12hrs': 43200000,
-      '24hrs': 86400000,
-      '7days': 604800000,
-      '30days': 2592000000,
-    };
-
-    const rangeMs = timeRangeMs[filterState.timeRange as keyof typeof timeRangeMs] || 86400000;
-    filtered = filtered.filter(data =>
-      (now - data.timestamp) <= rangeMs
-    );
-
-    return filtered;
   },
 }));

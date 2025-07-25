@@ -24,6 +24,7 @@ export interface CloudRegion {
 }
 
 export interface LatencyData {
+  exchangeId(exchangeId: unknown): unknown;
   id: string;
   source: string;
   target: string;

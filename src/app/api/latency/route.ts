@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { Exchange, CloudRegion } from '@/lib/types';
 
@@ -8,13 +9,11 @@ const getFetchOptions = () => ({
     'Authorization': `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
     'Content-Type': 'application/json',
   },
-  // Remove caching for real-time updates
   cache: 'no-store' as RequestCache,
 });
 
 export async function GET() {
   try {
-    // Step 1: Fetch performance data
     const perfResponse = await fetch(`${API_BASE_URL}/quality/speed/top/locations?metric=latency&limit=20&format=json`, getFetchOptions());
     if (!perfResponse.ok) {
       throw new Error(`Performance API error: ${perfResponse.statusText}`);
@@ -26,7 +25,6 @@ export async function GET() {
     }
     const perfLocations = perfData.result.top_0;
 
-    // Step 2: Use predefined location mapping for consistent coordinates
     const knownLocations: Record<string, { lat: number; lon: number; name: string }> = {
       'US': { lat: 39.8283, lon: -98.5795, name: 'United States' },
       'GB': { lat: 55.3781, lon: -3.4360, name: 'United Kingdom' },
@@ -86,13 +84,11 @@ export async function GET() {
       'UY': { lat: -32.5228, lon: -55.7658, name: 'Uruguay' }
     };
 
-    // Step 3: Filter and map valid locations
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const validLocations = perfLocations.filter((loc: any) => {
       return knownLocations[loc.clientCountryAlpha2];
     });
 
-    // Step 4: Map to your application's data structures with real-time latency values
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const exchanges: Exchange[] = validLocations.map((loc: any, index: number) => {
       const locationData = knownLocations[loc.clientCountryAlpha2];
@@ -104,12 +100,10 @@ export async function GET() {
         position: [locationData.lat, locationData.lon, 0],
         region: loc.clientCountryAlpha2,
         status: 'online',
-        // Use actual latency data from Cloudflare
         latency: parseFloat(loc.latencyIdle) || Math.random() * 200 + 10,
       };
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cloudRegions: CloudRegion[] = validLocations.map((loc: any, index: number) => {
       const locationData = knownLocations[loc.clientCountryAlpha2];
       return {
@@ -122,16 +116,16 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ 
-      exchanges, 
+    return NextResponse.json({
+      exchanges,
       cloudRegions,
       timestamp: Date.now(),
-      success: true 
+      success: true
     });
 
   } catch (error) {
     console.error('Error in /api/latency route:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: (error as Error).message, 
       exchanges: [], 
       cloudRegions: [],

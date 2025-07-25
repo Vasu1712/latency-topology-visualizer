@@ -43,8 +43,6 @@ const LatencyConnection: React.FC<LatencyConnectionProps> = ({
   }, [sourcePosition, targetPosition]);
 
   const tubeGeometry = useMemo(() => new THREE.TubeGeometry(curve, 64, 0.004, 8, false), [curve]);
-  const points = curve.getPoints(100);
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
   // This hook animates the pulse effect on every frame
   useFrame(({ clock }) => {

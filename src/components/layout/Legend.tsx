@@ -63,23 +63,14 @@ const Legend: React.FC = () => {
     toggleExchanges,
     toggleConnections,
     toggleRegions,
-    getAverageLatency,
-    getTotalConnections,
     getLatencyStats,
-    lastDataUpdate
   } = useStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'markers' | 'connections' | 'settings'>('markers');
-  const [animationKey, setAnimationKey] = useState(0);
   const legendRef = useRef<HTMLDivElement>(null);
-
-  // Get real-time computed values
-  const averageLatency = getAverageLatency();
-  const totalConnections = getTotalConnections();
   const latencyStats = getLatencyStats();
 
-  // Calculate provider distributions
   const exchangesByProvider = {
     aws: exchanges.filter(e => e.cloudProvider === 'aws').length,
     gcp: exchanges.filter(e => e.cloudProvider === 'gcp').length,
@@ -98,7 +89,6 @@ const Legend: React.FC = () => {
     { id: 'settings', label: 'Settings', icon: 'lucide:settings' },
   ];
 
-  // Close legend when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (legendRef.current && !legendRef.current.contains(event.target as Node)) {
@@ -119,7 +109,6 @@ const Legend: React.FC = () => {
 
   return (
     <div ref={legendRef} className="absolute bottom-24 right-4 z-30 legendglass rounded-full">
-      {/* Toggle Button */}
       <motion.button
         className=" p-4 rounded-full shadow-2xl flex justify-center border border-white/20 hover:from-blue-500/80 hover:to-purple-500/80 transition-all duration-300"
         onClick={() => setIsOpen(!isOpen)}

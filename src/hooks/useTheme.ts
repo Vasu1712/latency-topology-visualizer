@@ -28,7 +28,7 @@ export const useTheme = () => {
         toggleTheme();
       }
     }
-  }, []);
+  }, [theme, toggleTheme]);
 
   // Save theme to localStorage when it changes
   useEffect(() => {

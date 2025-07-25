@@ -9,8 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Icon } from '@iconify-icon/react';
-import { Label } from '@/components/ui/label';
 
 const TimeRange: React.FC = () => {
   const { filterState, setTimeRange } = useStore();
@@ -25,17 +23,24 @@ const TimeRange: React.FC = () => {
   ];
 
   const selectedOption = timeOptions.find(option => option.value === filterState.timeRange);
+  const otherParametersReady = filterState.selectedExchanges.length > 0 && 
+                               filterState.selectedClouds.length > 0 && 
+                               filterState.latencyRange[1] > 0;
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm text-fade-blue/80 font-medium">Time Range</span>
-      <Select value={filterState.timeRange} onValueChange={setTimeRange}>
-        <SelectTrigger className="bg-white/10 border-white/20 text-white focus:bg-white/15">
-          <div className="flex items-center space-x-2">
-            <SelectValue />
-          </div>
+      <Select
+        value={filterState.timeRange} 
+        onValueChange={setTimeRange}
+        disabled={!otherParametersReady}
+      >
+        <SelectTrigger className={`bg-white/10 border-white/20 text-white focus:bg-white/15 ${
+          !otherParametersReady ? 'opacity-50 cursor-not-allowed' : ''
+        }`}>
+
+        <SelectValue placeholder="Time Range" />
         </SelectTrigger>
-        <SelectContent className="bg-black-900/95 backdrop-blur-xl border-white/10">
+        <SelectContent className="bg-gray-900/95 backdrop-blur-xl border-white/10">
           {timeOptions.map((option) => (
             <SelectItem
               key={option.value}
@@ -44,11 +49,18 @@ const TimeRange: React.FC = () => {
             >
               <div className="flex flex-col">
                 <span className="font-medium">{option.label}</span>
+                <span className="text-xs text-white/60">{option.description}</span>
               </div>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+
+      {!otherParametersReady && (
+        <div className="text-xs text-yellow-400/80 rounded">
+          Select other params first
+        </div>
+      )}
     </div>
   );
 };

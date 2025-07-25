@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { useRealTimeLatency } from '@/hooks/useRealTimeLatency';
 
 const RealTimeStatus = () => {
-  const { isStarted, lastDataUpdate, isDataLoading } = useStore();
+  const { isStarted, lastDataUpdate } = useStore();
   const { isLoading, error } = useRealTimeLatency();
 
   if (!isStarted) return null;

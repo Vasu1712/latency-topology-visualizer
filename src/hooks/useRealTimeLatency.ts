@@ -47,12 +47,15 @@ export const useRealTimeLatency = () => {
         else if (latency <= 150) status = 'medium';
         
         connections.push({
-          id: `latency-${exchange.id}-${targetRegion.id}`,
-          source: exchange.id,
-          target: targetRegion.id,
-          latency,
-          timestamp: Date.now(),
-          status,
+            id: `latency-${exchange.id}-${targetRegion.id}`,
+            source: exchange.id,
+            target: targetRegion.id,
+            latency,
+            timestamp: Date.now(),
+            status,
+            exchangeId: function (exchangeId: unknown): unknown {
+                throw new Error('Function not implemented.');
+            }
         });
       }
     });

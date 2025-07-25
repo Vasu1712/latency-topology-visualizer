@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useStore } from '@/store/useStore';
-import { Button } from '@/components/ui/button';
 import { Icon } from '@iconify-icon/react';
 import GlassButton from '@/components/ui/glassbutton';
 
@@ -41,7 +40,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-function setStarted(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}
 

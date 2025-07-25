@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { CLOUD_PROVIDERS } from '@/lib/constants';
 
 interface CloudRegionMarkerProps {
   position: THREE.Vector3;
